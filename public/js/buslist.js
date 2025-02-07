@@ -1,4 +1,74 @@
-//import { time } from 'console';
+// const socket = new WebSocket("ws://localhost:3000"); // Connect to WebSocket server
+const socket = new WebSocket("wss://nchsbusapp.org/ws/"); // Connect to WebSocket server
+
+socket.addEventListener("open", () => {
+  console.log("Connected to WebSocket server");
+});
+
+// Listen for messages from the server
+socket.addEventListener('message', (event) => {
+    console.log('WebSocket message received:', event.data);
+  
+    // Parse the received data
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      console.error('Error parsing WebSocket message:', event.data);
+      return;
+    }
+  
+    // Update the buses if buslist is included in the message
+    if (data.buslist) {
+      getBusses(data.buslist); // Renders updated bus list
+    }
+  });
+  
+
+ 
+  
+  
+  function handleBusClick(busNumber) {
+    const busButton = document.getElementById(`bus-${busNumber}`);
+    let newStatus;
+
+    if (busButton.style.backgroundColor === "rgb(255, 44, 44)") {
+        newStatus = "Arrived";
+    } else if (busButton.style.backgroundColor === "green") {
+        newStatus = "Departed";
+    } else {
+        newStatus = "Not Arrived";
+    }
+
+    // Send the new status to the server
+    const busData = { number: busNumber, newStatus };
+    fetch('/updateStatus', {
+        method: 'POST',
+        body: JSON.stringify(busData),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+        .then((response) => {
+            if (!response.ok) {
+                // If response is not JSON, return text for error handling
+                return response.text().then((text) => {
+                    throw new Error(text);
+                });
+            }
+            return response.json();
+        })
+        .then((data) => {
+            console.log('Bus status updated:', data);
+        })
+        .catch((error) => {
+            console.error('Error updating bus status:', error.message);
+            alert(`Error updating bus status: ${error.message}`);
+        });
+}
+
+  
+
 
 console.log();
 
@@ -42,6 +112,9 @@ function updateBusses() {
     }).catch(err => console.error(err));
 }
 
+//WEBSOCKET
+
+//
 function getBusses() {
     let o = document.getElementsByClassName('busObj');
     for (let i = 0; i < o.length; i++) {
@@ -60,6 +133,7 @@ function getBusses() {
                 let div = document.createElement("div");
                 div.classList.add('busObj')
                 div.classList.add('flex-fill');
+                console.log("HERE");
 
                 if(data.buslist[i].status == "Not Arrived") div.style.backgroundColor = "rgb(255, 44, 44)";
                 else if(data.buslist[i].status == "Arrived") div.style.backgroundColor = "green";
@@ -104,7 +178,7 @@ function getBusses() {
                             newStatus: "Arrived",
                             change: change
                         };
-
+                        // sends the busdata
                         fetch('/updateStatus', {
                             method: 'POST',
                             body: JSON.stringify(busdata),
@@ -127,7 +201,8 @@ function getBusses() {
                             newStatus: "Departed",
                             change: change
                         };
-
+                        console.log(busdata);
+                        // sends the busdata
                         fetch('/updateStatus', {
                             method: 'POST',
                             body: JSON.stringify(busdata),
@@ -150,7 +225,7 @@ function getBusses() {
                             newStatus: "Not Arrived",
                             change: change
                         };
-
+                        // sends the busdata
                         fetch('/updateStatusTime', {
                             method: 'POST',
                             body: JSON.stringify(busdata),
@@ -168,7 +243,7 @@ function getBusses() {
                         div.style.backgroundColor = "rgb(255, 44, 44)";
                     }
                 }
-            }
+            }//end of the while loop
         }
     }).catch(err => console.error(err));
 }
@@ -209,7 +284,6 @@ function displayBusses() {
 }
 
 function resize() {
-    getBusses();
     var w = window.innerWidth;
     var h = window.innerHeight;
 

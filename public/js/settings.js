@@ -28,7 +28,7 @@ function listBus() {
         }
         }).then(data => {
         if(data) {
-            console.log(data);
+            //console.log(data);
             let i = 0;
             while(i < data.length) {
                 let bus = document.createElement("h5"); 
@@ -41,7 +41,7 @@ function listBus() {
         }
     }).catch(err => console.error(err));
 
-    console.log(c);
+    //console.log(c);
 
     
 
@@ -102,7 +102,7 @@ function listEmails() {
 listEmails()
 
 function listBuswhitelist() {
-    console.log('hello')
+    //console.log('hello')
     fetch('/getbus')
     .then(response => { 
         if(response.ok) {
@@ -112,7 +112,7 @@ function listBuswhitelist() {
         if(data) { // if there is data
             let i = 0;
             let busses = data.buslist;
-            console.log('busses')
+            //console.log('busses')
             while(i < busses.length) { // busses[i]
                 document.getElementById("bus-whitelist").append(busses[i].number)
                 document.getElementById("bus-whitelist").append("\n")

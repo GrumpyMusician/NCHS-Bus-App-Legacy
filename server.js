@@ -45,7 +45,7 @@ app.post("/updateStatus", (req, res) => {
   if (!bus || !bus.number || !bus.newStatus) {
     return res.status(400).json({ error: "Invalid bus data provided" });
   }
-  //console.log()
+  console.log()
   let change = bus.newStatus;
   let time = getTime();
 
@@ -575,7 +575,7 @@ app.post('/auth', (req, res) => {
     const userid = payload['sub'];
     // If request specified a G Suite domain:
     // const domain = payload['hd']; 
-    //console.log(payload.email);
+    console.log(payload.email);
     let whitelist = JSON.parse(fs.readFileSync("whitelist.json", "utf-8")).users;
     for (i = 0; i < whitelist.length; i++) {
       if (whitelist[i].toLowerCase() == payload.email.toLowerCase()){

@@ -2,6 +2,7 @@
 var express = require("express");
 const ejs = require("ejs");
 
+
 // Initialise Express
 var app = express();
 // Render static files
@@ -14,124 +15,12 @@ app.listen(8080);
 app.use(express.json({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
 
-
-
-// WEBSOCKET
-const http = require('http');
-const WebSocket = require('ws');
-//creats websocket server
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-
-app.use(express.json());
-
-
-// firebase admin
-const admin = require("firebase-admin");
-
-
-
-// retrives buslist
-app.get("/getbus", (req, res) => {
-  let datajson = fs.readFileSync("buslist.json");
-  let data = JSON.parse(datajson);
-  res.send(data);
-});
-
-//updates the buslist.json file after being called in buslist.js
-app.post("/updateStatus", (req, res) => {
-  let bus = req.body;
-  // Validate incoming request
-  if (!bus || !bus.number || !bus.newStatus) {
-    return res.status(400).json({ error: "Invalid bus data provided" });
-  }
-  console.log()
-  let change = bus.newStatus;
-  let time = getTime();
-
-  fs.readFile("buslist.json", "utf-8", (err, jsonString) => {
-    if (err) {
-      console.error("Error reading file:", err);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
-
-    let buslist;
-    try {
-      buslist = JSON.parse(jsonString);
-    } catch (parseError) {
-      console.error("Error parsing JSON:", parseError);
-      return res.status(500).json({ error: "Invalid JSON data" });
-    }
-
-    let updatingbus = bus.number;
-    if (bus.change != 0) {
-      updatingbus = bus.change;
-    }
-
-    // Update the bus status
-    let busFound = false;
-    console.log("bus change: "+ bus.newStatus);
-    for (let i = 0; i < buslist.buslist.length; i++) {
-      let iteratedbus = buslist.buslist[i].number;
-      if (buslist.buslist[i].change != null) {
-        iteratedbus = buslist.buslist[i].change;
-      }
-
-      if (updatingbus == iteratedbus) {
-        buslist.buslist[i].status = bus.newStatus;
-        buslist.buslist[i].timestamp = time;
-        busFound = true;
-        break;
-      }
-    }
-
-    if (!busFound) {
-      return res.status(404).json({ error: "Bus not found" });
-    }
-
-    let final = JSON.stringify(buslist);
-
-    fs.writeFile("buslist.json", final, (err) => {
-      if (err) {
-        console.error("Error writing file:", err);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-
-      // Brodcast updated data using the websockets
-      broadcast(buslist);
-
-      res.status(200).json({ message: "Bus status updated successfully" });
-    });
-    
-  });
-});
-
-//broadcasts the
-function broadcast(data) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data)); // Send updated data as stringified JSON
-    }
-  });
-}
-
-// WebSocket handling
-
-
-// Start the server
-const port = 3000;
-server.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
-
-
 const bodyParser = require("body-parser");
 app.use(
   bodyParser.urlencoded({
     extended: true,
   })
 );
-
 const fs = require("fs");
 const { ok } = require("assert");
 
@@ -146,7 +35,6 @@ app.get("/", function (req, res) {
   res.render("pages/index");
 });
 
-// resets the buslist.json file
 function reset(condition) {
   let hour = new Date().getHours();
   if (hour == 0 || condition) {
@@ -174,7 +62,6 @@ function reset(condition) {
 }
 reset(false);
 setInterval(reset, 1000 * 60 * 60, false);
-
 
 //let busNum = Number(req.body.busnum);
 
@@ -219,7 +106,7 @@ function verifyToken(req, res) {
   return false;
 }
 
-// All of these gets are called only if an authorized user calls them
+//will need to fix later
 app.get("/reset", (req, res) => {
   if (verifyToken(req, res)){
     reset(true);
@@ -231,30 +118,40 @@ app.get("/reset", (req, res) => {
 });
 
 app.get("/buslist", function (req, res) {
- // if (verifyToken(req, res)) {
-    return res.render("pages/buslist");
-  //} else {
-  //  return res.redirect("/");
- // }
+  if (verifyToken(req, res)) {
+    /*
+    const f = require("fs");
+    const readline = require("readline");
+    var user_file = "buslist.txt";
+    var r = readline.createInterface({
+      input: f.createReadStream(user_file),
+    });
+    r.on("line", function (text) {
+      res.send;
+    }); */
+    res.render("pages/buslist");
+  }
+  else {
+    res.redirect('/')
+  }
 });
 
-
 app.get("/buschanges", function (req, res) {
-  //if (verifyToken(req, res)) 
+  if (verifyToken(req, res)) 
   res.render("pages/buschanges");
- // else res.redirect('/');
+  else res.redirect('/');
 });
 
 app.get("/logs", function (req, res) {
- // if (verifyToken(req, res))
+  if (verifyToken(req, res))
   res.render("pages/logs");
- // else res.redirect('/');
+  else res.redirect('/');
 });
 
 app.get("/settings", function (req, res) {
-  //if (verifyToken(req, res))
+  if (verifyToken(req, res))
   res.render("pages/settings");
- // else res.redirect('/');
+  else res.redirect('/');
 });
 
 app.get("/getemails", (req, res) => {
@@ -338,7 +235,11 @@ app.post("/addbus", (req, res) => {
     res.redirect("settings");
   });
 });
-
+app.get("/getbus", (req, res) => {
+  let datajson = fs.readFileSync("buslist.json");
+  let data = JSON.parse(datajson);
+  res.send(data);
+});
 app.post("/delbus", (req, res) => {
   action_done = "Bus Deleted";
 
@@ -370,13 +271,11 @@ app.post("/delbus", (req, res) => {
   });
   res.redirect("settings");
 });
-
 app.get('/login', (req, res) => {
   if (verifyToken(req, res)) 
     res.render("pages/buslist");
   else res.render('pages/login');
 });
-
 app.post("/login-auth", (req, res) => {
   // username is anything on the whitelist
   // the password will be:
@@ -406,115 +305,97 @@ app.post("/login-auth", (req, res) => {
   }
   if (!redirected) res.redirect('/login');
 });
-
 app.get("/logout", (req, res) => {
   res.clearCookie('c_email');
   res.clearCookie('c_token');
   res.redirect("/");
 });
 
-app.post("/updateStatusTime", (req, res) => {
+app.post("/updateStatus", (req, res) => {
   let bus = req.body;
-  // Validate incoming request
-  if (!bus || !bus.number || !bus.newStatus) {
-    return res.status(400).json({ error: "Invalid bus data provided" });
-  }
-
-  let change = bus.newStatus;
-  let time = getTime();
+  change = bus.newStatus;
+  time = getTime();
 
   fs.readFile("buslist.json", "utf-8", (err, jsonString) => {
-    if (err) {
-      console.error("Error reading file:", err);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+    let buslist = JSON.parse(jsonString);
 
-    let buslist;
-    try {
-      buslist = JSON.parse(jsonString);
-    } catch (parseError) {
-      console.error("Error parsing JSON:", parseError);
-      return res.status(500).json({ error: "Invalid JSON data" });
-    }
-
-    let updatingbus = bus.number;
-    if (bus.change != 0) {
-      updatingbus = bus.change;
-    }
-
-    // Update the bus status
-    let busFound = false;
-    for (let i = 0; i < buslist.buslist.length; i++) {
-      let iteratedbus = buslist.buslist[i].number;
-      if (buslist.buslist[i].change != null) {
-        iteratedbus = buslist.buslist[i].change;
+    updatingbus = bus.number;
+      if(bus.change != 0){
+        updatingbus = bus.change
       }
 
-      if (updatingbus == iteratedbus) {
+    for (i = 0; i < buslist.buslist.length; i++) {
+      iteratedbus = buslist.buslist[i].number;
+      if (buslist.buslist[i].change != null){
+          iteratedbus = buslist.buslist[i].change;
+      }
+      
+      if (updatingbus == iteratedbus){
         buslist.buslist[i].status = bus.newStatus;
-        buslist.buslist[i].timestamp = "";
-        busFound = true;
-        break;
+        buslist.buslist[i].timestamp = time;
       }
-    }
-
-    if (!busFound) {
-      return res.status(404).json({ error: "Bus not found" });
-    }
+    };
 
     let final = JSON.stringify(buslist);
-
-    fs.writeFile("buslist.json", final, (err) => {
-      if (err) {
-        console.error("Error writing file:", err);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-
-      // Brodcast updated data
-      
-      broadcast(buslist);
-
-      res.status(200).json({ message: "Bus status updated successfully" });
-    });
-  });
-});
-
-
-app.post('/updateChange', express.json(), (req, res) => {
-  const givenbus = req.body;
-  fs.readFile("buslist.json", "utf-8", (err, jsonString) => {
-    if (err) {
-      console.error("Error reading buslist.json:", err);
-      return res.status(500).json({ message: "Error reading bus list" });
-    }
-    
-    try {
-      let busList = JSON.parse(jsonString);
-      const bus = givenbus;
-      
-      for (i = 0; i < busList.buslist.length; i++) {
-        if (busList.buslist[i].number == bus.number) {
-            if (bus.change == 0) busList.buslist[i].change = null;
-            else busList.buslist[i].change = bus.change;
-        }
-      };
-
-
-      
-    let final = JSON.stringify(busList);
 
     fs.writeFile("buslist.json", final, (err) => {});
 
     res.redirect("buslist");
+  });
+});
 
-    broadcast(busList);
-    } 
-    catch (parseError) {
-      console.error("Error parsing buslist.json:", parseError);
-      return res.status(500).json({ message: "Invalid JSON in bus list" });
+app.post("/updateStatusTime", (req, res) => {
+  let bus = req.body;
+  change = bus.newStatus;
+
+  fs.readFile("buslist.json", "utf-8", (err, jsonString) => {
+    let buslist = JSON.parse(jsonString);
+
+    updatingbus = bus.number;
+    if(bus.change != 0){
+      updatingbus = bus.change
     }
-    });
-  
+
+  for (i = 0; i < buslist.buslist.length; i++) {
+    iteratedbus = buslist.buslist[i].number;
+    if (buslist.buslist[i].change != null){
+        iteratedbus = buslist.buslist[i].change;
+    }
+    
+    if (updatingbus == iteratedbus){
+      buslist.buslist[i].status = bus.newStatus;
+      buslist.buslist[i].timestamp = "";
+    }
+  }
+
+    let final = JSON.stringify(buslist);
+
+    fs.writeFile("buslist.json", final, (err) => {});
+
+    res.redirect("buslist");
+  });
+});
+
+app.post("/updateChange", (req, res) => {
+  let bus = req.body;
+  change = bus.newChange;
+
+  fs.readFile("buslist.json", "utf-8", (err, jsonString) => {
+    let buslist = JSON.parse(jsonString);
+
+        for (i = 0; i < buslist.buslist.length; i++) {
+            if (buslist.buslist[i].number == bus.number) {
+                if (bus.change == 0) buslist.buslist[i].change = null;
+                else buslist.buslist[i].change = bus.change;
+            }
+        };
+
+    let final = JSON.stringify(buslist);
+
+    fs.writeFile("buslist.json", final, (err) => {});
+
+    res.redirect("buslist");
+  });
 });
 
 app.get("/getlogs", (req, res) => {
